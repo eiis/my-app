@@ -1,20 +1,36 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Appearance, Pressable, Text, View } from 'react-native';
+import { withExpoSnack, styled, useColorScheme } from 'nativewind';
 
-export default function App() {
+import Calendar from './components/Calendar'
+
+const StyledPressable = styled(Pressable)
+const StyledText = styled(Text)
+// const StyleCalendar =styled(Calendar)
+
+const App = () => {
+  const [selected, setSelected] = useState('');
+  const { colorScheme, toggleColorScheme } = useColorScheme();
+
+  const backgroundColor = colorScheme === 'dark' ? '#000' : '#fff';
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      {/* <StyleCalendar selected={selected} setSelected={setSelected}  backgroundColor={backgroundColor}/> */}
+      <StyledPressable
+        onPress={toggleColorScheme}
+        className="flex-1 items-center justify-center dark:bg-slate-800"
+      >
+        <StyledText
+          selectable={false}
+          className="dark:text-white"
+        >
+          {`Try clicking me! ${colorScheme === "dark" ? "🌙" : "🌞"}`}
+        </StyledText>
+      </StyledPressable>
+    </SafeAreaProvider>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
