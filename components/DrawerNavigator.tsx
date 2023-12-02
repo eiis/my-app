@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, Button, Modal, StyleSheet,Alert } from 'react-native';
+import { View, TextInput, Button, Modal, StyleSheet,Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import { AntDesign } from '@expo/vector-icons';
 import { LongPressGestureHandler, State } from 'react-native-gesture-handler';
 
@@ -13,44 +13,81 @@ import {
 } from '@react-navigation/drawer';
 
 import HomeScreen from './HomeScreen';
+import DefaultScreen from './DefaultScreen';
 
 const Drawer = createDrawerNavigator();
 
+
+type UrlObject = {
+  index: number;
+  url: string;
+  title:string,
+  image:string
+};
+
 export default function DrawerNavigator() {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [url, setUrl] = useState('');
-  const [urls, setUrls] = useState(['https://www.baidu.com']); // 默认的屏幕名称
+  
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [url, setUrl] = useState<string>('');
+  const [urls, setUrls] = useState<UrlObject[]>([]);
+
 
   useEffect(() => {
     // 获取存储的URLs
     const loadUrls = async () => {
       try {
         const urlsString = await AsyncStorage.getItem('urls');
+        console.log(urlsString,'DrawerNavigator');
+        
         if (urlsString) {
-          setUrls(JSON.parse(urlsString));
+          const storedUrls = JSON.parse(urlsString);
+          setUrls(storedUrls);
         }
       } catch (e) {
-        // 读取错误
         console.error(e);
       }
     };
-
     loadUrls();
   }, []);
+  
 
 
   // 动态生成 Drawer.Screen
-  const screens = urls.map((url, index) => 
+  const screens = urls.length > 0 ? urls.map((urlObject, index) => 
     <Drawer.Screen 
-      name={url} 
+      name={urlObject.title ? urlObject.title :urlObject.url } // 使用 urlObject.index 作为屏幕名称
       component={HomeScreen}
-      initialParams={{ url: url }} 
+      initialParams={{ 
+        url: urlObject.url,
+        // onRefresh: handleRefresh,
+      }} // 使用 urlObject.url 作为参数
       key={index} 
+    />
+  ) : (
+    // 如果 urls 为空，渲染一个默认的屏幕
+    <Drawer.Screen 
+      name="default-screen" 
+      component={DefaultScreen} // 替换为您的默认屏幕组件
     />
   );
 
+  const loadUrls = async () => {
+    try {
+      const urlsString = await AsyncStorage.getItem('urls');
+      console.log(urlsString,'DrawerNavigator');
+      
+      if (urlsString) {
+        const storedUrls = JSON.parse(urlsString);
+        setUrls(storedUrls);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // 添加屏幕的函数
   const addScreen = async () => {
+    
     // 校验URL
     const urlPattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
       '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
@@ -58,29 +95,64 @@ export default function DrawerNavigator() {
       '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
       '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
       '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-    if (!urlPattern.test(url)) {
-      Alert.alert("错误", "请输入一个有效的URL。");
-      return;
-    }
 
-    // 保存到状态和本地存储
-    try {
-      const newUrls = [...urls, url];
+     // 如果 URL 校验通过
+     if (urlPattern.test(url)) {
+      // 保存 URL 到状态和本地存储
+      try {
+        // 构建一个带有 index 的新对象数组
+      const newIndex = urls.length;
+      const newUrlObject = { index: newIndex, url: url,title:'',image:'' };
+      const newUrls = [...urls, newUrlObject];
+
+      // 更新状态
       setUrls(newUrls);
+        
       await AsyncStorage.setItem('urls', JSON.stringify(newUrls));
+      // loadUrls()
+
+      } catch (e) {
+        console.error(e);
+      }
+
+      setModalVisible(false); // 关闭模态框
+      setUrl(''); // 重置 URL 输入
+    } else {
+      Alert.alert("错误", "请输入一个有效的URL。");
+    }
+  };
+
+  const clearAllUrls = async () => {
+    try {
+      // 清空状态中的 urls 数组
+      setUrls([]);
+  
+      // 从 AsyncStorage 中删除 'urls' 键及其数据
+      await AsyncStorage.removeItem('urls');
+      const urlsString = await AsyncStorage.getItem('urls');
+
+      console.log(urls,'urls',urlsString);
+      
     } catch (e) {
-      // 保存错误
       console.error(e);
     }
-
-    setModalVisible(false);
-    setUrl(''); // 重置URL输入
   };
+  
 
   const  CustomDrawerContent = (props:any) => {
     return (
       <DrawerContentScrollView {...props}>
-        <DrawerItem label="Add" icon={() => <AntDesign name="pluscircleo" size={24} color="black" />} onPress={() => setModalVisible(true)} />
+        <View style={styles.actionBar}>
+          <TouchableOpacity style={styles.actionButton} onPress={loadUrls}>
+            <AntDesign name="reload1" size={24} color="black" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={()=>clearAllUrls()}>
+            <AntDesign name="delete" size={24} color="black" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => setModalVisible(true)}>
+            <AntDesign name="plus" size={24} color="black" />
+          </TouchableOpacity>
+        </View>
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
     );
@@ -89,6 +161,11 @@ export default function DrawerNavigator() {
   return (
     <NavigationContainer>
       <Drawer.Navigator
+        screenOptions={{
+          drawerType:"slide",
+          overlayColor:"transparent"
+        }}
+        initialRouteName="111"
         drawerContent={(props) => <CustomDrawerContent {...props} />}
       >
         {screens}
@@ -120,6 +197,16 @@ export default function DrawerNavigator() {
 }
 
 const styles = StyleSheet.create({
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#fff', // 或者任何其他颜色
+  },
+  actionButton: {
+    padding: 10,
+  },
   centeredView: {
     flex: 1,
     justifyContent: 'center',
