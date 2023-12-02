@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, TextInput, Button, Modal, StyleSheet,Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme,useTheme } from '@react-navigation/native';
 import { AntDesign } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
 import { LongPressGestureHandler, State } from 'react-native-gesture-handler';
 
 import {
@@ -30,6 +31,35 @@ export default function DrawerNavigator() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [url, setUrl] = useState<string>('');
   const [urls, setUrls] = useState<UrlObject[]>([]);
+
+  const colorScheme = useColorScheme();
+  const { colors } = useTheme();
+
+  const MyDarkTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      // primary: 'rgb(255, 45, 85)',
+      card: 'rgb(30,41,59)',
+      text: 'rgb(199, 199, 204)',
+      // border: 'rgb(199, 199, 204)',
+      // notification: 'rgb(255, 69, 58)',
+    },
+  };
+  
+  const MyLightTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      // primary: 'rgb(255, 45, 85)',
+      background: 'rgb(242, 242, 242)',
+      card: 'rgb(255, 255, 255)',
+      text: 'rgb(28, 28, 30)',
+      // border: 'rgb(199, 199, 204)',
+      // notification: 'rgb(255, 69, 58)',
+    },
+  };
+  
 
 
   useEffect(() => {
@@ -74,7 +104,6 @@ export default function DrawerNavigator() {
   const loadUrls = async () => {
     try {
       const urlsString = await AsyncStorage.getItem('urls');
-      console.log(urlsString,'DrawerNavigator');
       
       if (urlsString) {
         const storedUrls = JSON.parse(urlsString);
@@ -141,8 +170,8 @@ export default function DrawerNavigator() {
 
   const  CustomDrawerContent = (props:any) => {
     return (
-      <DrawerContentScrollView {...props}>
-        <View style={styles.actionBar}>
+      <DrawerContentScrollView {...props} style={colorScheme === 'dark' ? styles.br: styles.unbr }>
+        <View style={colorScheme === 'dark' ? styles.actionBar: styles.unactionBar }>
           <TouchableOpacity style={styles.actionButton} onPress={loadUrls}>
             <AntDesign name="reload1" size={24} color="black" />
           </TouchableOpacity>
@@ -159,7 +188,7 @@ export default function DrawerNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={colorScheme === 'dark' ? MyDarkTheme : MyLightTheme}>
       <Drawer.Navigator
         screenOptions={{
           drawerType:"slide",
@@ -197,12 +226,25 @@ export default function DrawerNavigator() {
 }
 
 const styles = StyleSheet.create({
+  br:{
+    backgroundColor: 'rgb(30 41 59)', // 或者任何其他颜色
+  },
+  unbr:{
+    backgroundColor: 'rgb(255, 255, 255)', // 或者任何其他颜色
+  },
   actionBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: '#fff', // 或者任何其他颜色
+    backgroundColor: 'rgb(30 41 59)', // 或者任何其他颜色
+  },
+  unactionBar:{
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: 'rgb(255, 255, 255)', // 或者任何其他颜色
   },
   actionButton: {
     padding: 10,

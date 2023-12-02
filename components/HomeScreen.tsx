@@ -31,8 +31,8 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
         // if (route.params.onRefresh) {
         //   route.params.onRefresh();
         // }
-        const urlsString = await AsyncStorage.getItem('urls');
-        console.log(urlsString,'HomeScreen');
+        // const urlsString = await AsyncStorage.getItem('urls');
+        // console.log(urlsString,'HomeScreen');
       }
     } catch (e) {
       console.error(e);
